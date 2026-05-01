@@ -22,7 +22,7 @@ class InputEmbedding(nn.Module):
         Returns:
             Tensor: Embedded input. Shape: (batch_size, seq_length, d_model)
         """
-        return self.embedding * math.sqrt(self.d_model)  # (batch_size, seq_length, d_model)
+        return self.embedding(x) * math.sqrt(self.d_model)  # (batch_size, seq_length, d_model)
 
 class PositionalEncoding(nn.Module):
     """Adds positional encoding to the input tensor."""
@@ -58,3 +58,28 @@ class PositionalEncoding(nn.Module):
         """
         x = x + (self.pe[:, :x.shape[1], :])  # (batch_size, seq_length, d_model)
         return self.dropout(x)  # (batch_size, seq_length, d_model)
+
+class LayerNormalization(nn.Module):
+    """Applies layer normalization over a batch of inputs."""
+    def __init__(self, features: int, eps: float = 1e-6):
+        """
+        Args:
+            features (int): Number of features(d_model) in the input tensor.
+            eps (float): Small value to avoid division by zero.
+        """
+        super().__init__()
+        self.eps = eps
+        self.beta = nn.Parameter(torch.zeros(features))  # (features,)
+        self.gamma = nn.Parameter(torch.ones(features))  # (features,)
+
+    def forward(self, x):
+        """Forward pass for layer normalization.
+        Args:
+            x (Tensor): Input tensor. Shape: (..., features)
+        Returns:
+            Tensor: Layer-normalized tensor. Shape: (..., features)
+        """
+        x_mean = x.mean(dim=-1, keepdim=True)  # (..., 1)
+        x_std = x.std(dim=-1, unbiased=False, keepdim=True)  # (..., 1)
+        # Normalize and scale
+        return self.gamma * ((x - x_mean) / (x_std + self.eps)) + self.beta  # (..., features)
