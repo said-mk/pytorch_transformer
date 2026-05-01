@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import math
+from torch.nn import functional as F
 
 class InputEmbedding(nn.Module):
     """Embedding layer with scaling for input tokens."""
@@ -83,3 +84,16 @@ class LayerNormalization(nn.Module):
         x_std = x.std(dim=-1, unbiased=False, keepdim=True)  # (..., 1)
         # Normalize and scale
         return self.gamma * ((x - x_mean) / (x_std + self.eps)) + self.beta  # (..., features)
+
+class FeedForward(nn.Module):
+    def __init__(self, d_model:int, d_ff:int, dropout:float):
+        super().__init__()
+        self.linear1 = nn.Linear(d_model, d_ff)
+        self.linear2 = nn.Linear(d_ff, d_model)
+        self.dropout = nn.Dropout(dropout)
+    def forward(self, x):
+        x = self.linear1(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+        x = self.linear2(x)
+        return x
