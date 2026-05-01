@@ -117,12 +117,12 @@ class MultiHeadAttention(nn.Module):
         d_k = query.size(-1)
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)  # (batch_size, h, seq_length, seq_length)
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, float('-inf'))  # (batch_size, h, seq_length, seq_length)
+            scores = scores.masked_fill(mask == 0, float(-1e9))  # (batch_size, h, seq_length, seq_length)
         attention_score = F.softmax(scores, dim=-1)  # (batch_size, h, seq_length, seq_length)
         if dropout > 0:
-            attention_score = F.dropout(attention_score, p=dropout)  # (batch_size, h, seq_length, seq_length)
-        output = torch.matmul(attention_score, value)  # (batch_size, h, seq_length, d_k)
-        return output, attention_score
+            attention_score = F.dropout(attention_score, p=dropout, training=self.training)  # (batch_size, h, seq_length, seq_length)
+        out = torch.matmul(attention_score, value)  # (batch_size, h, seq_length, d_k)
+        return out, attention_score
 
     
     def forward(self, q, k, v, mask):
@@ -130,10 +130,19 @@ class MultiHeadAttention(nn.Module):
         key = self.w_k(k) # (batch_size, seq_length, d_model)
         value = self.w_v(v) # (batch_size, seq_length, d_model)
 
-        query = query.view(-1, query.size(1), self.h, self.d_k).transpose(1, 2)  # (batch_size, h, seq_length, d_k)
-        key = key.view(-1, key.size(1), self.h, self.d_k).transpose(1, 2)  # (batch_size, h, seq_length, d_k)
-        value = value.view(-1, value.size(1), self.h, self.d_k).transpose(1, 2)  # (batch_size, h, seq_length, d_k)
+        query = query.view(query.size(0), query.size(1), self.h, self.d_k).transpose(1, 2)  # (batch_size, h, seq_length, d_k)
+        key = key.view(key.size(0), key.size(1), self.h, self.d_k).transpose(1, 2)  # (batch_size, h, seq_length, d_k)
+        value = value.view(value.size(0), value.size(1), self.h, self.d_k).transpose(1, 2)  # (batch_size, h, seq_length, d_k)
         x, self.attention_score = self.attention(query, key, value, mask, self.dropout.p)  # x (batch_size, h, seq_length, d_k)
         x = x.transpose(1, 2).contiguous().view(-1, x.size(2), self.h * self.d_k)  # (batch_size, seq_length, d_model)
         return self.w_o(x)  # (batch_size, seq_length, d_model)
     
+class ResidualConnection(nn.Module):
+    def __init__(self, size:int, dropout:float):
+        super().__init__()
+        self.dropout = nn.Dropout(dropout)
+        self.ln = LayerNormalization(size)
+
+    def forward(self, x, sublayer):
+        out = x + self.dropout(sublayer(x))
+        return self.ln(out)
