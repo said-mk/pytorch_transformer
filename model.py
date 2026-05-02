@@ -112,7 +112,6 @@ class MultiHeadAttention(nn.Module):
         self.w_v = nn.Linear(d_model, self.d_model, bias=False)
         self.w_o = nn.Linear(d_model, self.d_model, bias=False)
 
-    @staticmethod
     def attention(query, key, value, mask, dropout:float):
         d_k = query.size(-1)
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)  # (batch_size, h, seq_length, seq_length)
@@ -146,3 +145,15 @@ class ResidualConnection(nn.Module):
     def forward(self, x, sublayer):
         out = x + self.dropout(sublayer(x))
         return self.ln(out)
+
+class EncoderBlock(nn.Module):
+    def __init__(self, d_model: int, attention: MultiHeadAttention, feed_forward: FeedForward, dropout: float):
+        super().__init__()
+        self.attention = attention
+        self.feed_forward = feed_forward
+        self.add_norm_attn = ResidualConnection(size=d_model, dropout=dropout)
+        self.add_norm_ffn = ResidualConnection(size=d_model, dropout=dropout)
+    def forward(self, x, mask):
+        x = self.add_norm_attn(x, lambda x: self.attention(x, x, x, mask))  # (batch_size, seq_length, d_model)
+        x = self.add_norm_ffn(x, self.feed_forward)  # (batch_size, seq_length, d_model)
+        return x
