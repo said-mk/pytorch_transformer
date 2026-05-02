@@ -157,3 +157,14 @@ class EncoderBlock(nn.Module):
         x = self.add_norm_attn(x, lambda x: self.attention(x, x, x, mask))  # (batch_size, seq_length, d_model)
         x = self.add_norm_ffn(x, self.feed_forward)  # (batch_size, seq_length, d_model)
         return x
+
+class Encoder(nn.Module):
+    def __init__(self,d_model:int, layers:nn.ModuleList):
+        super().__init__()
+        self.layers = layers
+        self.norm = LayerNormalization(d_model)
+
+    def forward(self,x, mask):
+        for layer in self.layers:
+            x = layer(x, mask)
+        return self.norm(x)
