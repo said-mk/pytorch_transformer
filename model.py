@@ -168,3 +168,30 @@ class Encoder(nn.Module):
         for layer in self.layers:
             x = layer(x, mask)
         return self.norm(x)
+
+class DecoderBlock(nn.Module):
+    def __init__(self, d_model:int, self_attetion:MultiHeadAttention, cross_attention:MultiHeadAttention, ffn:FeedForward, dropout:float):
+        super().__init__()
+        self.attention = self_attetion
+        self.cross_attention = cross_attention
+        self.feed_forward = ffn
+        self.add_norm_cross_MHA = ResidualConnection(d_model, dropout)
+        self.add_norm_masked_MHA = ResidualConnection(d_model, dropout)
+        self.add_norm_feed_forward = ResidualConnection(d_model, dropout)
+    
+    def forward(self, x, encoder_output, src_mask, tgt_mask):
+        x = self.add_norm_masked_MHA(x, lambda x: self.attention(x, x, x, tgt_mask))
+        x = self.add_norm_cross_MHA(x, lambda x: self.cross_attention(x, encoder_output, encoder_output, src_mask))
+        x = self.add_norm_feed_forward(x, self.feed_forward)
+        return x
+
+class Decoder(nn.Module):
+    def __init__(self, d_model:int, layers:nn.ModuleList):
+        super().__init__()
+        self.layers = layers
+        self.norm = LayerNormalization(d_model)
+    
+    def forward(self, x, encoder_ouput, src_mask, tgt_mask):
+        for layer in  self.layers:
+            x = layer(x, encoder_ouput, src_mask, tgt_mask )
+        return self.norm(x)
