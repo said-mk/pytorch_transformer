@@ -88,7 +88,7 @@ def run_validation(model, val_dataloader, tokenizer_src, tokenizer_tgt, max_len,
         writer.add_scalar('validation/bleu', bleu_score, global_step)
 
 def get_ds(config):
-    ds_raw = load_dataset(f"{config['datasource']}", split='train')
+    ds_raw = load_dataset(f"{config['datasource']}", split='train', trust_remote_code=True)
 
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config['lang_src'])
     tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config['lang_tgt'])
