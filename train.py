@@ -122,12 +122,8 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
     return model
 
 def train_model(config):
-    device = "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps or torch.backends.mps.is_available() else "cpu"
+    device = torch.device(torch.accelerator.current_accelerator() if torch.accelerator.is_available() else "cpu")
     print("Using device:", device)
-    if (device == 'cuda'):
-        print(f"Device name: {torch.cuda.get_device_name(device.index)}")
-        print(f"Device memory: {torch.cuda.get_device_properties(device.index).total_memory / 1024 ** 3} GB")
-    device = torch.device(device)
 
     model_folder = f"{config['datasource']}_{config['model_folder']}".replace('/', '_')
     Path(model_folder).mkdir(parents=True, exist_ok=True)
