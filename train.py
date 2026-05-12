@@ -126,7 +126,7 @@ def train_model(config):
     device = torch.device(torch.accelerator.current_accelerator() if torch.accelerator.is_available() else "cpu")
     print("Using device:", device)
 
-    model_folder = f"{config['datasource']}_{config['model_folder']}".replace('/', '_')
+    model_folder = config['model_folder']
     Path(model_folder).mkdir(parents=True, exist_ok=True)
 
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)

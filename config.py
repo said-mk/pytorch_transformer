@@ -20,15 +20,12 @@ def get_config():
     }
 
 def get_weights_file_path(config, epoch: str):
-    model_folder = f"{config['datasource']}_{config['model_folder']}"
-    model_folder = model_folder.replace('/', '_')
+    model_folder = config['model_folder']
     model_filename = f"{config['model_basename']}{epoch}.pt"
-    return str(Path('.') / model_folder / model_filename)
+    return str(Path(model_folder) / model_filename)
 
 def latest_weights_file_path(config):
-    model_folder = f"{config['datasource']}_{config['model_folder']}"
-    model_folder = model_folder.replace('/', '_')
-    model_folder_path = Path('.') / model_folder
+    model_folder_path = Path(config['model_folder'])
     
     if not model_folder_path.exists():
         return None
