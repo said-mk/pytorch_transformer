@@ -19,6 +19,7 @@ This repository contains a readable implementation of the original Transformer m
 - `train.py`: Training script with metric tracking.
 - `config.py`: Training hyperparameters and path configurations.
 - `colab_train.ipynb`: Transformer model training notebook designed specifically for Google Colab. Saves model checkpoints and vocab files in case of runtime disconnects.
+- `requirements.txt`: List of dependencies required to run the code.
 
 ## Usage
 
